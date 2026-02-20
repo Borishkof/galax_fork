@@ -25,7 +25,7 @@ void Model_CPU_fast
 
 
 
-    // // OMP  version
+    // OMP  version
     #pragma omp parallel for
     for (int i = 0; i < n_particles; i += b_type::size)
     {
@@ -69,6 +69,7 @@ void Model_CPU_fast
         }
     }
 
+    #pragma omp parallel for
     for (int i = 0; i < n_particles; i += b_type::size){
 
         // load registers body i
