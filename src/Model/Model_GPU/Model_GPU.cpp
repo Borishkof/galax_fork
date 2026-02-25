@@ -82,12 +82,16 @@ Model_GPU
 void Model_GPU
 ::step()
 {
-	constexpr int n_particles = 10000; 
+	constexpr int n_particles = 10000; // is it good ?
 
-	float3* positionsGPU = cudaMalloc((void**)&positionsGPU; n_particles * sizeof(float3));
-	float3* velocitiesGPU = cudaMalloc((void**)&velocitiesGPU; n_particles * sizeof(float3));
-	float3* accelerationsGPU = cudaMalloc((void**)&accelerationsGPU; n_particles * sizeof(float3));
-	float* massesGPU = cudaMalloc((void**)&massesGPU; n_particles * sizeof(float));
+	float3* positionsGPU;
+	cudaMalloc((void**)&positionsGPU, n_particles * sizeof(float3));
+	float3* velocitiesGPU;
+	cudaMalloc((void**)&velocitiesGPU, n_particles * sizeof(float3));
+	float3* accelerationsGPU;
+	cudaMalloc((void**)&accelerationsGPU, n_particles * sizeof(float3));
+	float* massesGPU;
+	cudaMalloc((void**)&massesGPU, n_particles * sizeof(float));
 
 	update_position_gpu(positionsGPU, positionsGPU, accelerationsGPU, massesGPU, n_particles);
 
