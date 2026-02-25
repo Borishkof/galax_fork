@@ -82,13 +82,30 @@ Model_GPU
 void Model_GPU
 ::step()
 {
+	constexpr int n_particles = 10000; 
+
+	float3* positionsGPU = cudaMalloc((void**)&positionsGPU; n_particles * sizeof(float3));
+	float3* velocitiesGPU = cudaMalloc((void**)&velocitiesGPU; n_particles * sizeof(float3));
+	float3* accelerationsGPU = cudaMalloc((void**)&accelerationsGPU; n_particles * sizeof(float3));
+	float* massesGPU = cudaMalloc((void**)&massesGPU; n_particles * sizeof(float));
+
+	update_position_gpu(positionsGPU, positionsGPU, accelerationsGPU, massesGPU, n_particles);
+
 	cuda_memcpy(positionsf3.data(), positionsGPU, n_particles * sizeof(float3), cudaMemcpyDeviceToHost);
+
 	for (int i = 0; i < n_particles; i++)
 	{
 		particles.x[i] = positionsf3[i].x;
 		particles.y[i] = positionsf3[i].y;
 		particles.z[i] = positionsf3[i].z;
 	}
+
+
+	cudaFree((void**)&positionsGPU);
+	cudaFree((void**)&velocitiesGPU);
+	cudaFree((void**)&accelerationsGPU);
+	cudaFree((void**)&massesGPU);
+
 }
 
 #endif // GALAX_MODEL_GPU
