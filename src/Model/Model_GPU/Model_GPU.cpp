@@ -93,7 +93,7 @@ void Model_GPU
 	float* massesGPU;
 	cudaMalloc((void**)&massesGPU, n_particles * sizeof(float));
 
-	update_position_gpu(positionsGPU, positionsGPU, accelerationsGPU, massesGPU, n_particles);
+	update_position_gpu(positionsGPU, velocitiesGPU, accelerationsGPU, massesGPU, n_particles);
 
 	cuda_memcpy(positionsf3.data(), positionsGPU, n_particles * sizeof(float3), cudaMemcpyDeviceToHost);
 
@@ -105,10 +105,10 @@ void Model_GPU
 	}
 
 
-	cudaFree((void**)&positionsGPU);
-	cudaFree((void**)&velocitiesGPU);
-	cudaFree((void**)&accelerationsGPU);
-	cudaFree((void**)&massesGPU);
+	cudaFree(positionsGPU);
+	cudaFree(velocitiesGPU);
+	cudaFree(accelerationsGPU);
+	cudaFree(massesGPU);
 
 }
 
