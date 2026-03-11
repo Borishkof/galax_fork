@@ -3,71 +3,55 @@
 #include "cuda.h"
 #include "kernel.cuh"
 
-__global__ void compute_acc(float3 * positionsGPU, float3 * velocitiesGPU, float3 * accelerationsGPU, float* massesGPU, int n_particles)
+__global__ void compute_acc(float3* positionsGPU, float3* velocitiesGPU,
+                             float3* accelerationsGPU, float* massesGPU, int n_particles)
 {
-    const int block_size = 128; 
+    const int block_size = 128;
 
-    __shared__ float3 shared_pos[block_size];
+    __shared__ float3 shared_pos [block_size];
     __shared__ float  shared_mass[block_size];
 
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     float3 acc = {0.0f, 0.0f, 0.0f};
     float3 my_pos;
 
-    if(i < n_particles) {
+    if (i < n_particles)
         my_pos = positionsGPU[i];
-    }
 
-    // On parcourt toutes les particules j par tiles
     for (int tile = 0; tile < n_particles; tile += block_size)
     {
-        // Chaque thread du bloc
         int target_j = tile + threadIdx.x;
-        if (target_j < n_particles) {
-            shared_pos[threadIdx.x]  = positionsGPU[target_j];
-            shared_mass[threadIdx.x] = massesGPU[target_j];
-        } else {
-            shared_pos[threadIdx.x]  = {0,0,0};
-            shared_mass[threadIdx.x] = 0.0f;
-        }
-
-        // Bloc chargé
+        shared_pos [threadIdx.x] = (target_j < n_particles) ? positionsGPU[target_j] : make_float3(0,0,0);
+        shared_mass[threadIdx.x] = (target_j < n_particles) ? massesGPU[target_j]    : 0.f;
         __syncthreads();
 
-        // CALCUL dans le tile
-        if (i < n_particles) {
-            for (int j = 0; j < block_size; j++) {
-                if (i != (tile + j)) {
-                    float3 pos_j = shared_pos[j];
-                    float diffx = pos_j.x - my_pos.x;
-                    float diffy = pos_j.y - my_pos.y;
-                    float diffz = pos_j.z - my_pos.z;
+        if (i < n_particles)
+        {
+            #pragma unroll
+            for (int j = 0; j < block_size; j++)
+            {
+                if (i == (tile + j)) continue;
 
-                    float dist_sq = diffx * diffx + diffy * diffy + diffz * diffz;
-                    
-                    float dij;
-                    if (dist_sq < 1.0f) {
-                        dij = 10.0f;
-                    } else {
-                        // Utilisation de rsqrtf pour la performance
-                        float inv_dist = rsqrtf(dist_sq);
-                        dij = 10.0f * (inv_dist * inv_dist * inv_dist);
-                    }
+                float dx = shared_pos[j].x - my_pos.x;
+                float dy = shared_pos[j].y - my_pos.y;
+                float dz = shared_pos[j].z - my_pos.z;
 
-					dij *= shared_mass[j];
+                float dist_sq = dx*dx + dy*dy + dz*dz;
 
-                    acc.x += diffx * dij;
-                    acc.y += diffy * dij;
-                    acc.z += diffz * dij;
-                }
+                float inv_dist = rsqrtf(dist_sq);
+                float dij = (dist_sq < 1.0f) ? 10.0f : 10.0f * inv_dist * inv_dist * inv_dist;
+
+                dij *= shared_mass[j];
+                acc.x += dx * dij;
+                acc.y += dy * dij;
+                acc.z += dz * dij;
             }
         }
         __syncthreads();
     }
 
-    if(i < n_particles) {
+    if (i < n_particles)
         accelerationsGPU[i] = acc;
-    }
 }
 
 __global__ void maj_pos(float3* positionsGPU, float3* velocitiesGPU, 
