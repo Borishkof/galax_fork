@@ -87,6 +87,13 @@ if(GALAX_LINK_OMP)
     endif()
 endif(GALAX_LINK_OMP)
 
+# Fast math
+option(GALAX_FASTMATH "Enable fast math optimizations" OFF)
+if(GALAX_FASTMATH)
+    message(STATUS "Galax - Fast math enabled")
+    target_compile_options(galax PRIVATE -ffast-math)
+endif()
+
 # Find Cuda
 if(GALAX_LINK_CUDA)
     target_compile_definitions(galax_cuda PUBLIC GALAX_MODEL_GPU)
