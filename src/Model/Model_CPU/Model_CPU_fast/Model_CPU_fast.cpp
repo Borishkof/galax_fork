@@ -8,7 +8,9 @@
 #include <omp.h>
 
 namespace xs = xsimd;
-using b_type = xs::batch<float, xs::avx2>;
+//using b_type = xs::batch<float, xs::avx2>;
+using arch_type = xs::default_arch;
+using b_type    = xs::batch<float, arch_type>;
 
 Model_CPU_fast
 ::Model_CPU_fast(const Initstate& initstate, Particles& particles)
