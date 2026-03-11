@@ -53,11 +53,11 @@ void Model_CPU_fast
             auto inv_sqrt = xsimd::rsqrt(dij);
             auto dij_else = 10.0f * inv_sqrt * inv_sqrt * inv_sqrt;
 
-            dij = xsimd::select(dij < b_type(1.0f), b_type(10.0f), dij_else);
+            dij = xsimd::select(dij < b_type(1.0f), b_type(10.0f), dij_else) * rmasse_j ;
 
-            raccx_i += diffx * dij * rmasse_j;
-            raccy_i += diffy * dij * rmasse_j;
-            raccz_i += diffz * dij * rmasse_j;
+            raccx_i += diffx * dij;
+            raccy_i += diffy * dij;
+            raccz_i += diffz * dij;
         }
 
         raccx_i.store_unaligned(&accelerationsx[i]);
