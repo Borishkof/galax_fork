@@ -30,7 +30,7 @@ __global__ void compute_acc(float3* positionsGPU, float3* velocitiesGPU,
             #pragma unroll
             for (int j = 0; j < block_size; j++)
             {
-                if (i == (tile + j)) continue;
+                //if (i == (tile + j)) continue;
 
                 float dx = shared_pos[j].x - my_pos.x;
                 float dy = shared_pos[j].y - my_pos.y;
