@@ -102,50 +102,85 @@ void Model_CPU_fast
 
 ::step()
 {
-	std::fill(accelerationsx.begin(), accelerationsx.end(), 0);
-	std::fill(accelerationsy.begin(), accelerationsy.end(), 0);
-	std::fill(accelerationsz.begin(), accelerationsz.end(), 0);
+    std::fill(accelerationsx.begin(), accelerationsx.end(), 0);
+    std::fill(accelerationsy.begin(), accelerationsy.end(), 0);
+    std::fill(accelerationsz.begin(), accelerationsz.end(), 0);
+
+
 
     #pragma omp parallel for
-	for (int i = 0; i < n_particles; i++)
-	{
+    for (int i = 0; i < n_particles; i += b_type::size)
+    {
+        b_type rposx_i = b_type::load_unaligned(&particles.x[i]);
+        b_type rposy_i = b_type::load_unaligned(&particles.y[i]);
+        b_type rposz_i = b_type::load_unaligned(&particles.z[i]);
+        b_type raccx_i(0.0f);
+        b_type raccy_i(0.0f);
+        b_type raccz_i(0.0f);
+
 		for (int j = 0; j < n_particles; j++)
 		{
 			if(i != j)
 			{
-				const float diffx = particles.x[j] - particles.x[i];
-				const float diffy = particles.y[j] - particles.y[i];
-				const float diffz = particles.z[j] - particles.z[i];
+                b_type rposx_j(particles.x[j]);
+                b_type rposy_j(particles.y[j]);
+                b_type rposz_j(particles.z[j]);
+                b_type rmasse_j(initstate.masses[j]);
 
-				float dij = diffx * diffx + diffy * diffy + diffz * diffz;
+                auto diffx = rposx_j - rposx_i;
+                auto diffy = rposy_j - rposy_i;
+                auto diffz = rposz_j - rposz_i;
 
-				if (dij < 1.0)
-				{
-					dij = 10.0;
-				}
-				else
-				{
-					dij = std::sqrt(dij);
-					dij = 10.0 / (dij * dij * dij);
-				}
+                auto dij = diffx * diffx + diffy * diffy + diffz * diffz;
 
-				accelerationsx[i] += diffx * dij * initstate.masses[j];
-				accelerationsy[i] += diffy * dij * initstate.masses[j];
-				accelerationsz[i] += diffz * dij * initstate.masses[j];
+                auto inv_sqrt = 1 / xsimd::sqrt(dij);
+                auto dij_else = 10.0f * inv_sqrt * inv_sqrt * inv_sqrt;
+
+				dij = xsimd::select(dij < b_type(1.0f), b_type(10.0f), dij_else);
+
+                raccx_i += diffx * dij * rmasse_j;
+                raccy_i += diffy * dij * rmasse_j;
+                raccz_i += diffz * dij * rmasse_j;
 			}
 		}
+
+        raccx_i.store_unaligned(&accelerationsx[i]);
+        raccy_i.store_unaligned(&accelerationsy[i]);
+        raccz_i.store_unaligned(&accelerationsz[i]);
 	}
 
     #pragma omp parallel for
-	for (int i = 0; i < n_particles; i++)
-	{
-		velocitiesx[i] += accelerationsx[i] * 2.0f;
-		velocitiesy[i] += accelerationsy[i] * 2.0f;
-		velocitiesz[i] += accelerationsz[i] * 2.0f;
-		particles.x[i] += velocitiesx   [i] * 0.1f;
-		particles.y[i] += velocitiesy   [i] * 0.1f;
-		particles.z[i] += velocitiesz   [i] * 0.1f;
-	}
+    for (int i = 0; i < n_particles; i += b_type::size){
+
+        // load registers body i
+        b_type rposx_i = b_type::load_unaligned(&particles.x[i]);
+        b_type rposy_i = b_type::load_unaligned(&particles.y[i]);
+        b_type rposz_i = b_type::load_unaligned(&particles.z[i]);
+        b_type raccx_i = b_type::load_unaligned(&accelerationsx[i]);
+        b_type raccy_i = b_type::load_unaligned(&accelerationsy[i]);
+        b_type raccz_i = b_type::load_unaligned(&accelerationsz[i]);
+
+        // load velocities i
+        b_type rvelox_i = b_type::load_unaligned(&velocitiesx[i]);
+        b_type rveloy_i = b_type::load_unaligned(&velocitiesy[i]);
+        b_type rveloz_i = b_type::load_unaligned(&velocitiesz[i]);
+
+        rvelox_i += raccx_i * 2.0f;
+        rveloy_i += raccy_i * 2.0f;
+        rveloz_i += raccz_i * 2.0f;
+
+        rvelox_i.store_unaligned(&velocitiesx[i]);
+        rveloy_i.store_unaligned(&velocitiesy[i]);
+        rveloz_i.store_unaligned(&velocitiesz[i]);
+
+        rposx_i += rvelox_i * 0.1f;
+        rposy_i += rveloy_i * 0.1f;
+        rposz_i += rveloz_i * 0.1f;
+
+        rposx_i.store_unaligned(&particles.x[i]);
+        rposy_i.store_unaligned(&particles.y[i]);
+        rposz_i.store_unaligned(&particles.z[i]);
+    }
 }
 
 #endif // GALAX_MODEL_CPU_FAST
