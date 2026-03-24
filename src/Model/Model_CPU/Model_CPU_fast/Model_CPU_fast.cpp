@@ -131,7 +131,7 @@ void Model_CPU_fast
 
             auto dij = diffx * diffx + diffy * diffy + diffz * diffz;
 
-            auto inv_sqrt = 1 / xsimd::sqrt(dij);
+            auto inv_sqrt = xsimd::rsqrt(dij);
             auto dij_else = 10.0f * inv_sqrt * inv_sqrt * inv_sqrt;
 
             dij = xsimd::select(dij < b_type(1.0f), b_type(10.0f), dij_else);
