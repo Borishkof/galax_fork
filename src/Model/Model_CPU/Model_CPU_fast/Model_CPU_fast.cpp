@@ -120,28 +120,25 @@ void Model_CPU_fast
 
 		for (int j = 0; j < n_particles; j++)
 		{
-			if(i != j)
-			{
-                b_type rposx_j(particles.x[j]);
-                b_type rposy_j(particles.y[j]);
-                b_type rposz_j(particles.z[j]);
-                b_type rmasse_j(initstate.masses[j]);
+            b_type rposx_j(particles.x[j]);
+            b_type rposy_j(particles.y[j]);
+            b_type rposz_j(particles.z[j]);
+            b_type rmasse_j(initstate.masses[j]);
 
-                auto diffx = rposx_j - rposx_i;
-                auto diffy = rposy_j - rposy_i;
-                auto diffz = rposz_j - rposz_i;
+            auto diffx = rposx_j - rposx_i;
+            auto diffy = rposy_j - rposy_i;
+            auto diffz = rposz_j - rposz_i;
 
-                auto dij = diffx * diffx + diffy * diffy + diffz * diffz;
+            auto dij = diffx * diffx + diffy * diffy + diffz * diffz;
 
-                auto inv_sqrt = 1 / xsimd::sqrt(dij);
-                auto dij_else = 10.0f * inv_sqrt * inv_sqrt * inv_sqrt;
+            auto inv_sqrt = 1 / xsimd::sqrt(dij);
+            auto dij_else = 10.0f * inv_sqrt * inv_sqrt * inv_sqrt;
 
-				dij = xsimd::select(dij < b_type(1.0f), b_type(10.0f), dij_else);
+            dij = xsimd::select(dij < b_type(1.0f), b_type(10.0f), dij_else);
 
-                raccx_i += diffx * dij * rmasse_j;
-                raccy_i += diffy * dij * rmasse_j;
-                raccz_i += diffz * dij * rmasse_j;
-			}
+            raccx_i += diffx * dij * rmasse_j;
+            raccy_i += diffy * dij * rmasse_j;
+            raccz_i += diffz * dij * rmasse_j;
 		}
 
         raccx_i.store_unaligned(&accelerationsx[i]);
