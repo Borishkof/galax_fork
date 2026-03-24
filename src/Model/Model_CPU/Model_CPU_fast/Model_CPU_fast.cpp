@@ -19,7 +19,7 @@ Model_CPU_fast
 }
 
 void Model_CPU_fast
-/*::step()
+::step()
 {
     std::fill(accelerationsx.begin(), accelerationsx.end(), 0);
     std::fill(accelerationsy.begin(), accelerationsy.end(), 0);
@@ -98,8 +98,8 @@ void Model_CPU_fast
         rposy_i.store_unaligned(&particles.y[i]);
         rposz_i.store_unaligned(&particles.z[i]);
     }
-}*/
-
+}
+/*
 ::step()
 {
     std::fill(accelerationsx.begin(), accelerationsx.end(), 0);
@@ -179,6 +179,6 @@ void Model_CPU_fast
         rposy_i.store_unaligned(&particles.y[i]);
         rposz_i.store_unaligned(&particles.z[i]);
     }
-}
+}*/
 
 #endif // GALAX_MODEL_CPU_FAST
